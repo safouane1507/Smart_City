@@ -16,8 +16,13 @@ void MainMenuScene::load() {
 
   // Create "START" button
   auto start =
-      std::make_shared<UIButton>(Vector2{cx - btnWidth / 2, cy}, Vector2{btnWidth, btnHeight}, "START", eventBus);
+      std::make_shared<UIButton>(Vector2{cx - btnWidth / 2, cy - btnHeight - spacing}, Vector2{btnWidth, btnHeight}, "START", eventBus);
   start->setOnClick([this]() { eventBus->publish(SceneChangeEvent{SceneType::MapConfig, {}}); });
+
+  // Create "TRAFFIC" button
+  auto traffic = std::make_shared<UIButton>(Vector2{cx - btnWidth / 2, cy},
+                                         Vector2{btnWidth, btnHeight}, "TRAFFIC", eventBus);
+  traffic->setOnClick([this]() { eventBus->publish(SceneChangeEvent{SceneType::AdaptiveSignals, {}}); });
 
   // Create "EXIT" button
   auto exit = std::make_shared<UIButton>(Vector2{cx - btnWidth / 2, cy + btnHeight + spacing},
@@ -25,6 +30,7 @@ void MainMenuScene::load() {
   exit->setOnClick([this]() { eventBus->publish(WindowCloseEvent{}); });
 
   ui.add(start);
+  ui.add(traffic);
   ui.add(exit);
 }
 void MainMenuScene::unload() {}
