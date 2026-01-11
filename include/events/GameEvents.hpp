@@ -10,7 +10,7 @@ struct MapConfig {
   int largeChargingCount = 0;
 };
 
-enum class SceneType { MainMenu, MapConfig, Game };
+enum class SceneType { MainMenu, MapConfig, Game, AdaptiveSignals };
 struct SceneChangeEvent {
   SceneType newScene;
   MapConfig config;

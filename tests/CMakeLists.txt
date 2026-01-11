@@ -9,6 +9,8 @@ FetchContent_MakeAvailable(googletest)
 
 # Collect source files (excluding main.cpp)
 file(GLOB_RECURSE TEST_SOURCES "${CMAKE_SOURCE_DIR}/src/*.cpp")
+file(GLOB ADAPTIVE_SOURCES "${CMAKE_SOURCE_DIR}/adaptive-signals/src/*.cpp")
+list(APPEND TEST_SOURCES ${ADAPTIVE_SOURCES})
 list(FILTER TEST_SOURCES EXCLUDE REGEX ".*main\\.cpp$")
 
 # Declare the test executable
@@ -27,6 +29,7 @@ add_executable(unit_tests
 
 target_include_directories(unit_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/adaptive-signals/include
 )
 
 target_link_libraries(unit_tests PRIVATE

@@ -29,13 +29,15 @@ target_include_directories(raylib SYSTEM INTERFACE ${raylib_SOURCE_DIR}/src)
 
 # --- Sources ---
 file(GLOB_RECURSE SOURCES "src/*.cpp")
-
+file(GLOB ADAPTIVE_SOURCES "adaptive-signals/src/*.cpp")
+list(APPEND SOURCES ${ADAPTIVE_SOURCES})
 list(APPEND SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/systems/TrackingSystem.cpp")
 # --- Target ---
 add_executable(${PROJECT_NAME} ${SOURCES})
 
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/adaptive-signals/include
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE raylib)

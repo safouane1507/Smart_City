@@ -3,6 +3,7 @@
 #include "scenes/GameScene.hpp"
 #include "scenes/MainMenuScene.hpp"
 #include "scenes/MapConfigScene.hpp"
+#include "scenes/AdaptiveSignalsScene.hpp"
 
 SceneManager::SceneManager(std::shared_ptr<EventBus> bus) : eventBus(bus) {
   // Subscribe to SceneChangeEvent to handle scene transitions requested by other components
@@ -40,8 +41,11 @@ void SceneManager::setScene(SceneType type) {
   case SceneType::MapConfig:
     currentScene = std::make_unique<MapConfigScene>(eventBus);
     break;
-  case SceneType::Game:
+    case SceneType::Game:
     currentScene = std::make_unique<GameScene>(eventBus, nextConfig);
+    break;
+  case SceneType::AdaptiveSignals:
+    currentScene = std::make_unique<AdaptiveSignalsScene>(eventBus);
     break;
   }
   if (currentScene) {
