@@ -12,7 +12,8 @@
  * @brief Implementation of GameHUD.
  */
 
-GameHUD::GameHUD(std::shared_ptr<EventBus> bus, EntityManager *entityManager) : eventBus(bus) {
+GameHUD::GameHUD(std::shared_ptr<EventBus> bus, EntityManager *entityManager, const AdaptiveSignalsConfig& config) 
+    : eventBus(bus), adaptiveConfig(config) {
   // Setup UI Elements
   uiManager.add(std::make_shared<DashboardOverlay>(eventBus, entityManager));
 
@@ -58,6 +59,10 @@ GameHUD::GameHUD(std::shared_ptr<EventBus> bus, EntityManager *entityManager) : 
   });
 
   uiManager.add(trackBtn);
+
+  auto trafficBtn = std::make_shared<UIButton>(Vector2{10, 210}, Vector2{150, 40}, "Traffic Sim", eventBus);
+  trafficBtn->setOnClick([this]() { eventBus->publish(SceneChangeEvent{SceneType::AdaptiveSignals, {}, adaptiveConfig}); });
+  uiManager.add(trafficBtn);
 
   // Update button text automatically when the tracking state changes in the system
   eventTokens.push_back(eventBus->subscribe<TrackingStatusEvent>([weakTrackBtn](const TrackingStatusEvent& e) {

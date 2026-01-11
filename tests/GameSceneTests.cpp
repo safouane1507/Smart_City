@@ -28,7 +28,8 @@ TEST_F(GameSceneTests, CanInstantiateAndLoad) {
     config.smallParkingCount = 1;
 
 
-    auto scene = std::make_unique<GameScene>(bus, config);
+    AdaptiveSignalsConfig adaptiveConfig;
+    auto scene = std::make_unique<GameScene>(bus, config, adaptiveConfig);
     
     EXPECT_NO_THROW(scene->load());
     

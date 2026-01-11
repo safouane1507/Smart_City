@@ -19,7 +19,8 @@
  * and the main game update/draw logic.
  */
 
-GameScene::GameScene(std::shared_ptr<EventBus> bus, MapConfig config) : eventBus(bus), config(config) {}
+GameScene::GameScene(std::shared_ptr<EventBus> bus, MapConfig config, AdaptiveSignalsConfig adaptiveConfig) 
+    : eventBus(bus), config(config), adaptiveConfig(adaptiveConfig) {}
 
 GameScene::~GameScene() { Logger::Info("GameScene Destroyed"); }
 
@@ -32,7 +33,7 @@ void GameScene::load() {
   cameraSystem = std::make_unique<CameraSystem>(eventBus);
   entityManager = std::make_unique<EntityManager>(eventBus);
   trafficSystem = std::make_unique<TrafficSystem>(eventBus, *entityManager);
-  gameHUD = std::make_unique<GameHUD>(eventBus, entityManager.get());
+  gameHUD = std::make_unique<GameHUD>(eventBus, entityManager.get(), adaptiveConfig);
 
   // Generate World via Event
   eventBus->publish(GenerateWorldEvent{config});
