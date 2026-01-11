@@ -46,10 +46,14 @@ Application::Application() {
   eventTokens.push_back(eventBus->subscribe<SimulationSpeedChangedEvent>(
       [this](const SimulationSpeedChangedEvent &e) { gameLoop->setSpeedMultiplier(e.speedMultiplier); }));
 
-  // Subscribe to Scene Changes to reset speed
+  // Subscribe to Scene Changes to reset speed when moving to menus
   eventTokens.push_back(eventBus->subscribe<SceneChangeEvent>([this](const SceneChangeEvent &e) {
-    if (e.newScene != SceneType::Game) {
+    bool isMenu = (e.newScene == SceneType::MainMenu || 
+                   e.newScene == SceneType::MapConfig || 
+                   e.newScene == SceneType::AdaptiveSignalsConfig);
+    if (isMenu) {
       gameLoop->setSpeedMultiplier(1.0);
+      eventBus->publish(SimulationSpeedChangedEvent{1.0});
     }
   }));
 }

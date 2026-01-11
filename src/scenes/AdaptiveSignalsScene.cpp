@@ -71,11 +71,40 @@ void AdaptiveSignalsScene::load() {
     backBtn->setOnClick([this]() { eventBus->publish(SceneChangeEvent{SceneType::Game, {}}); });
     uiManager.add(backBtn);
 
+    // Speed control button
+    auto speedBtn = std::make_shared<UIButton>(Vector2{10, 150}, Vector2{150, 40}, "Speed: 1.0x", eventBus);
+    std::weak_ptr<UIButton> weakSpeedBtn = speedBtn;
+    speedBtn->setOnClick([this, weakSpeedBtn]() {
+        currentSpeed += 0.5f;
+        if (currentSpeed > 5.0f) {
+            currentSpeed = 1.0f;
+        }
+        eventBus->publish(SimulationSpeedChangedEvent{(double)currentSpeed});
+        if (auto btn = weakSpeedBtn.lock()) {
+            char buffer[32];
+            snprintf(buffer, sizeof(buffer), "Speed: %.1fx", currentSpeed);
+            btn->setText(buffer);
+        }
+    });
+    uiManager.add(speedBtn);
+
+    // Subscribe to Global Speed Changes
+    eventTokens.push_back(
+        eventBus->subscribe<SimulationSpeedChangedEvent>([this, weakSpeedBtn](const SimulationSpeedChangedEvent &e) {
+            this->currentSpeed = (float)e.speedMultiplier;
+            if (auto btn = weakSpeedBtn.lock()) {
+                char buffer[32];
+                snprintf(buffer, sizeof(buffer), "Speed: %.1fx", currentSpeed);
+                btn->setText(buffer);
+            }
+        }));
+
     isInitialized = true;
 }
 
 void AdaptiveSignalsScene::unload() {
     Logger::Info("Force unloading AdaptiveSignalsScene");
+    eventTokens.clear();
     if (coordinator) {
         delete coordinator;
         coordinator = nullptr;

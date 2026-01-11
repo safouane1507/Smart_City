@@ -80,6 +80,17 @@ GameHUD::GameHUD(std::shared_ptr<EventBus> bus, EntityManager *entityManager, co
         autoSpawnBtn->setText(text);
       }));
 
+  // Subscribe to Global Speed Changes to keep UI in sync
+  eventTokens.push_back(
+      eventBus->subscribe<SimulationSpeedChangedEvent>([this, weakSpeedBtn](const SimulationSpeedChangedEvent &e) {
+        this->currentSpeed = e.speedMultiplier;
+        if (auto btn = weakSpeedBtn.lock()) {
+          char buffer[32];
+          snprintf(buffer, sizeof(buffer), "Speed: %.1fx", currentSpeed);
+          btn->setText(buffer);
+        }
+      }));
+
   // Subscribe to Pause Events to toggle pause text visibility
   eventTokens.push_back(eventBus->subscribe<GamePausedEvent>([this](const GamePausedEvent &) { isPaused = true; }));
 

@@ -1,6 +1,7 @@
 #pragma once
 #include "scenes/IScene.hpp"
 #include "events/GameEvents.hpp"
+#include "core/EventBus.hpp"
 #include "ui/UIManager.hpp"
 
 // Forward declarations for adaptive-signals classes
@@ -32,4 +33,6 @@ private:
     LogiqueAdaptative* logiqueGlobal = nullptr;
     
     bool isInitialized = false;
+    float currentSpeed = 1.0f;
+    std::vector<Subscription> eventTokens;
 };
