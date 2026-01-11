@@ -3,6 +3,7 @@
 #include "events/GameEvents.hpp"
 #include "scenes/IScene.hpp"
 #include <memory>
+#include <unordered_map>
 
 /**
  * @class SceneManager
@@ -48,11 +49,14 @@ public:
 
 private:
   std::shared_ptr<EventBus> eventBus;   ///< EventBus for communication.
-  std::unique_ptr<IScene> currentScene; ///< The currently active scene.
+  IScene* currentScene = nullptr; ///< The currently active scene (owned by persistentScenes or nonPersistentScene).
+  std::unique_ptr<IScene> nonPersistentScene; ///< For scenes like MainMenu.
+  std::unordered_map<SceneType, std::unique_ptr<IScene>> persistentScenes;
 
   Subscription sceneChangeToken; ///< Token for scene change event subscription.
 
   bool changeQueued = false;                 ///< Flag indicating a scene change is pending.
   SceneType nextScene = SceneType::MainMenu; ///< The next scene to load.
   MapConfig nextConfig;
+  AdaptiveSignalsConfig nextAdaptiveConfig;
 };

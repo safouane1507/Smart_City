@@ -61,7 +61,7 @@ void MapConfigScene::load() {
   float playBtnWidth = 200.0f;
   auto playBtn = std::make_shared<UIButton>(Vector2{cx - playBtnWidth / 2, startY + 4 * (rowHeight + spacing) + 20},
                                             Vector2{playBtnWidth, rowHeight}, "PLAY", eventBus);
-  playBtn->setOnClick([this]() { eventBus->publish(SceneChangeEvent{SceneType::Game, config}); });
+  playBtn->setOnClick([this]() { eventBus->publish(SceneChangeEvent{SceneType::AdaptiveSignalsConfig, config}); });
 
   ui.add(playBtn);
 }

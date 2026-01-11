@@ -1,5 +1,4 @@
 #include "scenes/AdaptiveSignalsScene.hpp"
-#include "scenes/AdaptiveSignalsScene.hpp"
 #include "coordinator.h"
 #include "intersectioncontroller.h"
 #include "trafficlight.h"
@@ -9,6 +8,7 @@
 #include "events/GameEvents.hpp"
 #include "core/Logger.hpp"
 #include "config.hpp"
+#include "ui/UIButton.hpp"
 #include <string>
 
 void DrawTrafficLightRealistic(float x, float y, Color activeColor, bool vertical) {
@@ -38,25 +38,23 @@ void DrawCrosswalk(float x, float y, float width, float height, bool horizontal)
 static std::vector<Car> cars;
 static float spawnTimer = 0;
 static bool isNightMode = false;
-static int rows = 1;
-static int cols = 1;
 
-AdaptiveSignalsScene::AdaptiveSignalsScene(std::shared_ptr<EventBus> bus) : eventBus(bus) {}
+AdaptiveSignalsScene::AdaptiveSignalsScene(std::shared_ptr<EventBus> bus, const AdaptiveSignalsConfig& config) 
+    : eventBus(bus), adaptiveConfig(config) {}
 
 AdaptiveSignalsScene::~AdaptiveSignalsScene() {
     unload();
 }
 
 void AdaptiveSignalsScene::load() {
-    Logger::Info("Loading AdaptiveSignalsScene");
+    if (isInitialized) return;
+    
+    Logger::Info("Loading AdaptiveSignalsScene with {}x{} grid", adaptiveConfig.rows, adaptiveConfig.cols);
     coordinator = new Coordinator();
     logiqueGlobal = new LogiqueAdaptative();
     
-    // Default 2x3 grid as in the menu's default
-    rows = 2;
-    cols = 3;
-
-    for (int i = 0; i < (rows * cols); i++) {
+    int totalIntersections = adaptiveConfig.rows * adaptiveConfig.cols;
+    for (int i = 0; i < totalIntersections; i++) {
         std::string id = "Inter_" + std::to_string(i);
         IntersectionController* inter = new IntersectionController(id, logiqueGlobal);
         inter->addTrafficLight(new TrafficLight(LightColors::Red, ModeFeux::Fixe, new Capteur("S_NS" + id)), Direction::NorthSouth);
@@ -67,10 +65,17 @@ void AdaptiveSignalsScene::load() {
     cars.clear();
     spawnTimer = 0;
     isNightMode = false;
+
+    // Back button
+    auto backBtn = std::make_shared<UIButton>(Vector2{10, 100}, Vector2{150, 40}, "Back to Game", eventBus);
+    backBtn->setOnClick([this]() { eventBus->publish(SceneChangeEvent{SceneType::Game, {}}); });
+    uiManager.add(backBtn);
+
+    isInitialized = true;
 }
 
 void AdaptiveSignalsScene::unload() {
-    Logger::Info("Unloading AdaptiveSignalsScene");
+    Logger::Info("Force unloading AdaptiveSignalsScene");
     if (coordinator) {
         delete coordinator;
         coordinator = nullptr;
@@ -80,9 +85,12 @@ void AdaptiveSignalsScene::unload() {
         logiqueGlobal = nullptr;
     }
     cars.clear();
+    isInitialized = false;
 }
 
 void AdaptiveSignalsScene::update(double dt) {
+    uiManager.update(dt);
+
     if (IsKeyPressed(KEY_N)) isNightMode = !isNightMode;
 
     if (IsKeyPressed(KEY_A)) {
@@ -102,18 +110,17 @@ void AdaptiveSignalsScene::update(double dt) {
     float tile = 140.0f;
     float cellSpacing = roadWidth + tile;
     
-    // Using logical resolution from Config
     float screenW = Config::LOGICAL_WIDTH;
     float screenH = Config::LOGICAL_HEIGHT;
 
-    float totalWidth = (cols * roadWidth) + ((cols - 1) * tile);
-    float totalHeight = (rows * roadWidth) + ((rows - 1) * tile);
+    float totalWidth = (adaptiveConfig.cols * roadWidth) + ((adaptiveConfig.cols - 1) * tile);
+    float totalHeight = (adaptiveConfig.rows * roadWidth) + ((adaptiveConfig.rows - 1) * tile);
     float startX = (screenW - totalWidth) / 2.0f;
     float startY = (screenH - totalHeight) / 2.0f;
 
     // --- LOGIQUE DES CAPTEURS ---
     for (int idx = 0; idx < (int)coordinator->intersections.size(); idx++) {
-        int r = idx / cols; int c = idx % cols;
+        int r = idx / adaptiveConfig.cols; int c = idx % adaptiveConfig.cols;
         float ix = startX + c * cellSpacing; float iy = startY + r * cellSpacing;
         const float detectionRange = 120.0f;
         int countNS = 0; int countEW = 0;
@@ -139,8 +146,8 @@ void AdaptiveSignalsScene::update(double dt) {
     spawnTimer += (float)dt;
     float spawnRate = isNightMode ? 3.0f : 1.0f;
     if (spawnTimer > spawnRate) {
-        int r = GetRandomValue(0, rows - 1);
-        int c = GetRandomValue(0, cols - 1);
+        int r = GetRandomValue(0, adaptiveConfig.rows - 1);
+        int c = GetRandomValue(0, adaptiveConfig.cols - 1);
         int choice = GetRandomValue(0, 5);
         switch (choice) {
         case 0: cars.emplace_back(Vector2{ startX + c * cellSpacing + 15, -50 }, Direction::NorthSouth, BLUE, STRAIGHT_V_DOWN); break;
@@ -159,7 +166,7 @@ void AdaptiveSignalsScene::update(double dt) {
         const float STOP_GAP = 10.0f;
 
         for (int idx = 0; idx < (int)coordinator->intersections.size(); idx++) {
-            int cur_r = idx / cols; int cur_c = idx % cols;
+            int cur_r = idx / adaptiveConfig.cols; int cur_c = idx % adaptiveConfig.cols;
             float ix = startX + cur_c * cellSpacing; float iy = startY + cur_r * cellSpacing;
             float stopDist = -1.0f;
 
@@ -204,8 +211,8 @@ void AdaptiveSignalsScene::draw() {
     float screenW = Config::LOGICAL_WIDTH;
     float screenH = Config::LOGICAL_HEIGHT;
 
-    float totalWidth = (cols * roadWidth) + ((cols - 1) * tile);
-    float totalHeight = (rows * roadWidth) + ((rows - 1) * tile);
+    float totalWidth = (adaptiveConfig.cols * roadWidth) + ((adaptiveConfig.cols - 1) * tile);
+    float totalHeight = (adaptiveConfig.rows * roadWidth) + ((adaptiveConfig.rows - 1) * tile);
     float startX = (screenW - totalWidth) / 2.0f;
     float startY = (screenH - totalHeight) / 2.0f;
 
@@ -219,16 +226,16 @@ void AdaptiveSignalsScene::draw() {
     ClearBackground(currentGrass);
 
     // --- COUCHE 1 : ROUTES ---
-    for (int i = 0; i < rows; i++) DrawRectangle(0, (int)(startY + (i * cellSpacing)), (int)screenW, (int)roadWidth, currentRoad);
-    for (int j = 0; j < cols; j++) DrawRectangle((int)(startX + (j * cellSpacing)), 0, (int)roadWidth, (int)screenH, currentRoad);
+    for (int i = 0; i < adaptiveConfig.rows; i++) DrawRectangle(0, (int)(startY + (i * cellSpacing)), (int)screenW, (int)roadWidth, currentRoad);
+    for (int j = 0; j < adaptiveConfig.cols; j++) DrawRectangle((int)(startX + (j * cellSpacing)), 0, (int)roadWidth, (int)screenH, currentRoad);
 
     // --- COUCHE 1b : DÉCOR (GRASS + SIDEWALKS) ---
-    for (int i = 0; i <= rows; i++) {
-        for (int j = 0; j <= cols; j++) {
+    for (int i = 0; i <= adaptiveConfig.rows; i++) {
+        for (int j = 0; j <= adaptiveConfig.cols; j++) {
             float xTile = (j == 0) ? 0 : startX + (j - 1) * cellSpacing + roadWidth;
             float yTile = (i == 0) ? 0 : startY + (i - 1) * cellSpacing + roadWidth;
-            float wTile = (j == 0) ? startX : (j == cols) ? (screenW - xTile) : tile;
-            float hTile = (i == 0) ? startY : (i == rows) ? (screenH - yTile) : tile;
+            float wTile = (j == 0) ? startX : (j == adaptiveConfig.cols) ? (screenW - xTile) : tile;
+            float hTile = (i == 0) ? startY : (i == adaptiveConfig.rows) ? (screenH - yTile) : tile;
 
             DrawRectangle((int)xTile, (int)yTile, (int)wTile, (int)hTile, currentGrass);
 
@@ -252,32 +259,32 @@ void AdaptiveSignalsScene::draw() {
     const float GAP_BEFORE = 15.0f;
     const float GAP_AFTER = 25.0f;
 
-    for (int i = 0; i < rows; i++) {
+    for (int i = 0; i < adaptiveConfig.rows; i++) {
         float yLine = startY + i * cellSpacing + roadWidth * 0.5f - 2;
         DrawRectangle(0, (int)yLine, (int)(startX - GAP_BEFORE), (int)LINE_THICK, currentMark);
-        for (int j = 0; j < cols - 1; j++) {
+        for (int j = 0; j < adaptiveConfig.cols - 1; j++) {
             float xS = startX + j * cellSpacing + roadWidth + GAP_AFTER;
             float xE = startX + (j + 1) * cellSpacing - GAP_BEFORE;
             DrawRectangle((int)xS, (int)yLine, (int)(xE - xS), (int)LINE_THICK, currentMark);
         }
-        float xLast = startX + (cols - 1) * cellSpacing + roadWidth + GAP_AFTER;
+        float xLast = startX + (adaptiveConfig.cols - 1) * cellSpacing + roadWidth + GAP_AFTER;
         DrawRectangle((int)xLast, (int)yLine, (int)(screenW - xLast), (int)LINE_THICK, currentMark);
     }
 
-    for (int j = 0; j < cols; j++) {
+    for (int j = 0; j < adaptiveConfig.cols; j++) {
         float xLine = startX + j * cellSpacing + roadWidth * 0.5f - 2;
         DrawRectangle((int)xLine, 0, (int)LINE_THICK, (int)(startY - GAP_BEFORE), currentMark);
-        for (int i = 0; i < rows - 1; i++) {
+        for (int i = 0; i < adaptiveConfig.rows - 1; i++) {
             float yS = startY + i * cellSpacing + roadWidth + GAP_AFTER;
             float yE = startY + (i + 1) * cellSpacing - GAP_BEFORE;
             DrawRectangle((int)xLine, (int)yS, (int)LINE_THICK, (int)(yE - yS), currentMark);
         }
-        float yLast = startY + (rows - 1) * cellSpacing + roadWidth + GAP_AFTER;
+        float yLast = startY + (adaptiveConfig.rows - 1) * cellSpacing + roadWidth + GAP_AFTER;
         DrawRectangle((int)xLine, (int)yLast, (int)LINE_THICK, (int)(screenH - yLast), currentMark);
     }
 
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < cols; j++) {
+    for (int i = 0; i < adaptiveConfig.rows; i++) {
+        for (int j = 0; j < adaptiveConfig.cols; j++) {
             float xb = startX + j * cellSpacing; float yb = startY + i * cellSpacing;
             DrawCrosswalk(xb, yb - 15, roadWidth, 10, true);
             DrawCrosswalk(xb, yb + roadWidth + 5, roadWidth, 10, true);
@@ -295,8 +302,8 @@ void AdaptiveSignalsScene::draw() {
 
     // --- COUCHE 4 : FEUX + PANNEAUX ---
     for (int i = 0; i < (int)coordinator->intersections.size(); i++) {
-        float xB = startX + (i % cols) * cellSpacing;
-        float yB = startY + (i / cols) * cellSpacing;
+        float xB = startX + (i % adaptiveConfig.cols) * cellSpacing;
+        float yB = startY + (i / adaptiveConfig.cols) * cellSpacing;
 
         auto inter = coordinator->intersections[i];
         Color cNS = inter->LightsNS[0]->getRaylibColor();
@@ -340,5 +347,7 @@ void AdaptiveSignalsScene::draw() {
     DrawRectangle(10, 50, 180, 35, Fade(BLACK, 0.6f));
     DrawText(isNightMode ? "CYCLE: NUIT (N)" : "CYCLE: JOUR (N)", 20, 60, 16, isNightMode ? SKYBLUE : ORANGE);
     
-    DrawText("Press 'M' to return to Menu", 10, (int)screenH - 30, 20, LIGHTGRAY);
+    DrawText("ESC: Menu | N: Night | A: Adapt", 10, (int)screenH - 30, 20, LIGHTGRAY);
+
+    uiManager.draw();
 }

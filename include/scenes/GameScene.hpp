@@ -9,7 +9,7 @@
 class TrackingSystem;
 class GameScene : public IScene {
 public:
-  explicit GameScene(std::shared_ptr<EventBus> bus, MapConfig config);
+  explicit GameScene(std::shared_ptr<EventBus> bus, MapConfig config, AdaptiveSignalsConfig adaptiveConfig);
   ~GameScene() override;
 
   void load() override;
@@ -30,5 +30,6 @@ private:
   std::unique_ptr<class CameraSystem> cameraSystem;
   bool isPaused = false;
   MapConfig config;
+  AdaptiveSignalsConfig adaptiveConfig;
   std::set<int> keysDown;
 };

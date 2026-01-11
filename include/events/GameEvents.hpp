@@ -10,10 +10,16 @@ struct MapConfig {
   int largeChargingCount = 0;
 };
 
-enum class SceneType { MainMenu, MapConfig, Game, AdaptiveSignals };
+struct AdaptiveSignalsConfig {
+  int rows = 2;
+  int cols = 3;
+};
+
+enum class SceneType { MainMenu, MapConfig, Game, AdaptiveSignals, AdaptiveSignalsConfig };
 struct SceneChangeEvent {
   SceneType newScene;
-  MapConfig config;
+  MapConfig config = {};
+  AdaptiveSignalsConfig adaptiveConfig = {};
 };
 
 struct GenerateWorldEvent {
